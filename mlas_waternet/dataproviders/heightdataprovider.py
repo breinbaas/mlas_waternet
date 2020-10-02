@@ -6,8 +6,8 @@ from pydantic.dataclasses import dataclass
 from typing import List, Tuple
 
 from mlas.objects.points import Point3D
-from tiles import Tileset, TileType
-from routes import Routes
+from mlas_waternet.gis.tiles import Tileset, TileType
+from mlas_waternet.gis.routes import Routes
 
 
 @dataclass

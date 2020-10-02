@@ -3,6 +3,7 @@ import os, glob
 import dataclasses
 import numpy as np
 
+from pathlib import Path
 from typing import Tuple
 from pydantic import BaseModel
 from pydantic.dataclasses import dataclass
@@ -10,8 +11,8 @@ from pydantic.types import List, Optional
 import rasterio as rio
 
 from mlas.objects.points import Point3D
-from settings import SETTINGS
-from const import TILES_INIFILENAME
+from mlas_waternet.settings import SETTINGS
+from mlas_waternet.const import TILES_INIFILENAME
 
 
 class TileType(IntEnum):
@@ -111,7 +112,7 @@ class Tileset:
         else:
             raise ValueError(f"Unknown tile type {self.tile_type}")
 
-        self._inifile = os.path.join(self._tilesdir, TILES_INIFILENAME)
+        self._inifile = Path(self._tilesdir) / TILES_INIFILENAME
         self._initialize_available_data()
 
     def _initialize_available_data(self) -> None:
@@ -125,10 +126,10 @@ class Tileset:
         """Generates an ini file of the tiles"""
         fout = open(self._inifile, "w")
 
-        files = glob.glob(self._tilesdir + "*.tif")
+        files = glob.glob(self._tilesdir + "/*.tif")
 
         if len(files) == 0:
-            files = glob.glob(self._tilesdir + "*.img")
+            files = glob.glob(self._tilesdir + "/*.img")
 
         fout.write("file;left;right;bottom;top;resolution_x;resolution_y;rows;columns;no_data\n")
         for file in files:

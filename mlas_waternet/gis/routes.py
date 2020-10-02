@@ -8,7 +8,7 @@ from pydantic.dataclasses import dataclass
 
 from mlas.objects.points import ChainagePoint, Point3D
 
-from settings import SETTINGS
+from mlas_waternet.settings import SETTINGS
 
 
 class Route(BaseModel):
