@@ -15,25 +15,23 @@ Let op dat bij nieuwe databases eerst '''CREATE EXTENSION postgis;''' moet worde
 
 #### crosssections
 
-field | type
---- | --- 
-id | int
-leveecode | str
-chainage | int
-jsonfile | str
-imgfile | str
-date | date
-geom | LineString 
+field | type | description
+--- | --- | --- 
+id | int | unique id
+leveecode | str | code of the levee (for example A145
+chainage | int | chainage of the crosssection
+jsonfile | str | filepath of the json data
+imgfile | str | filepath of the image file
+date | date | date of the crosssection
+geom | LineString | geographical line between start- and endpoint
 
 #### cpts
 
-field | type
---- | --- 
-id | int
-filename | str
-z | float,2
-date | date
-geom | str
-date | date
-geom | Point 
+field | type | description
+--- | --- | --- 
+id | int | unique id
+filename | str | filename of the CPT
+z | float,2 | top level of the CPT
+date | date | date od the CPT
+geom | Point | geographical point of the CPT
 
