@@ -15,23 +15,25 @@ Let op dat bij nieuwe databases eerst '''CREATE EXTENSION postgis;''' moet worde
 
 #### crosssections
 
+field | type
 --- | --- 
-id        | int
+id | int
 leveecode | str
-chainage  | int
-jsonfile  | str
-imgfile   | str
-date      | date
-geom      | LineString 
+chainage | int
+jsonfile | str
+imgfile | str
+date | date
+geom | LineString 
 
 #### cpts
 
+field | type
 --- | --- 
-id        | int
-filename  | str
-z         | float,2
-date      | date
-geom      | str
-date      | date
-geom      | Point 
+id | int
+filename | str
+z | float,2
+date | date
+geom | str
+date | date
+geom | Point 
 
