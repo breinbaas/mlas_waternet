@@ -15,6 +15,7 @@ Let op dat bij nieuwe databases eerst '''CREATE EXTENSION postgis;''' moet worde
 
 #### crosssections
 
+--- | --- 
 id        | int
 leveecode | str
 chainage  | int
@@ -25,6 +26,7 @@ geom      | LineString
 
 #### cpts
 
+--- | --- 
 id        | int
 filename  | str
 z         | float,2
