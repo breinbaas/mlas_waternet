@@ -1,5 +1,7 @@
 import argparse
 import sys
+from pathlib import Path
+import shapefile
 
 from mlas.objects.points import Point2D
 
@@ -7,6 +9,7 @@ from mlas_waternet.creators.crosssectioncreator import CrosssectionCreator
 from mlas_waternet.creators.waterbottomcreator import WaterBottomCreator
 from mlas_waternet.dataproviders.heightdataprovider import HeightDataProvider, TileType
 from mlas_waternet.settings import OUTPUT_PATHS
+from mlas_waternet.dataproviders.inputdatabase import DBInput
 
 
 HEIGHT_DATA = TileType.AHN3
@@ -14,6 +17,7 @@ WATERBOTTOM_DATA = TileType.WATERBOTTOM
 DITCHES_DATA = TileType.DITCHES
 
 if __name__=="__main__":
+    db = DBInput()
     # preload the heightdataproviders saves time
     ahn3hdp = HeightDataProvider(tile_type=HEIGHT_DATA)
     ditchhdp = HeightDataProvider(tile_type=DITCHES_DATA)
@@ -22,7 +26,7 @@ if __name__=="__main__":
     if len(sys.argv) == 1: # for debugging purposes
         args = {
             "leveecode":"A145",
-            "centertocenter":1000
+            "centertocenter":10
         }
     else:
         argparser = argparse.ArgumentParser(description='Create crosssections for a given levee.')
@@ -60,5 +64,9 @@ if __name__=="__main__":
         for waterbottom in waterbottoms:
             crs.add_waterbottom([Point2D(x=p.l, z=p.z) for p in waterbottom])
 
-        crs.serialize(filepath=OUTPUT_PATHS["crosssections"])
-        crs.plot(filepath=OUTPUT_PATHS["crosssection_plots"])
+        crs_pfilename = crs.serialize(filepath=OUTPUT_PATHS["crosssections"])
+        crs_pimgname = crs.plot(filepath=OUTPUT_PATHS["crosssection_plots"])
+
+        crs_filename = str(crs_pfilename.resolve())
+        crs_imgname = str(crs_pimgname.resolve())
+        db.add_crosssection(crs, jsonfile=crs_filename, imgfile=crs_imgname)
