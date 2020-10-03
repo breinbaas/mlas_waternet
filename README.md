@@ -3,14 +3,6 @@ MLAS implementation at Waternet
 
 ## Installation on Windows
 
-#### mod_spatialite.dll
-
-To make Python work with spatialite databases you need to install the '''mod_spatialite.dll''' found at https://www.sqlite.org/download.html 
-
-Note that if you have QGis installed you will find this under '''C:\Program Files\QGIS 3.14\bin''' (or any other location you might have chosen for QGis)
-
-Be sure to add the directory containing this dll to the PATH environment in Windows
-
 ## Databases aanmaken
 
 We use PostGIS and SQLAlchemy
@@ -30,4 +22,14 @@ jsonfile  | str
 imgfile   | str
 date      | date
 geom      | LineString 
+
+#### cpts
+
+id        | int
+filename  | str
+z         | float,2
+date      | date
+geom      | str
+date      | date
+geom      | Point 
 
