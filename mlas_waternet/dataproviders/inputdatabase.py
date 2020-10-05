@@ -59,6 +59,7 @@ class DBInput():
              if r.leveecode==levee_code and r.chainage >= chainage_start and r.chainage <= chainage_end]
         
     def add_crosssection(self, crosssection, jsonfile, imgfile): 
+        # convert to database input
         geom = f"LineString({crosssection.startpoint.x} {crosssection.startpoint.y}, {crosssection.endpoint.x} {crosssection.endpoint.y})"
         row = DBCrosssectionsTable(
             leveecode=crosssection.levee_code, 
@@ -69,11 +70,13 @@ class DBInput():
             geom=geom
         )
         
+        # check if we already have a row with this levee_code and chainage
+        # todo > maybe use referencepoint to check instead of levee_code and chainage
         check_row = self.session.query(DBCrosssectionsTable). \
             filter(DBCrosssectionsTable.leveecode.like(crosssection.levee_code)). \
-            filter(DBCrosssectionsTable.chainage == crosssection.levee_chainage).first()
-        
-        if check_row is not None:
+            filter(DBCrosssectionsTable.chainage == crosssection.levee_chainage).first()        
+
+        if check_row is not None: # update
             self.session.query(DBCrosssectionsTable).filter(DBCrosssectionsTable==check_row.id). \
                 update(
                     {
@@ -83,20 +86,19 @@ class DBInput():
                         'geom':geom
                     }
                 ) 
-        else:
+        else: # new row
             self.session.add(row)
         self.session.commit()
 
     
     def add_stbusimple(self, stbu_simple):   
-        #check_row = self.session.query(DBSTBUSimpleTable). \
-        #    filter(DBCrosssectionsTable.geom.column.ST_AsText() == stbu_simple.point).first()
-        geom_string =  f"Point({stbu_simple.point.x} {stbu_simple.point.y})",
-        
-        check_row = self.session.query(DBSTBUSimpleTable).filter(func.ST_Contains(DBSTBUSimpleTable.geom, WKTElement(geom_string))).first()
+        # convert to database input
+        geom_string =  f"Point({stbu_simple.point.x} {stbu_simple.point.y})"
         date = datetime.datetime.today().strftime("%Y-%m-%d")
 
-        if not check_row:
+        # do we already have an entry at this point
+        check_row = self.session.query(DBSTBUSimpleTable).filter(func.ST_Contains(DBSTBUSimpleTable.geom, WKTElement(geom_string))).first() 
+        if not check_row: # add a new one
             row = DBSTBUSimpleTable(
                 result = stbu_simple.result,
                 imgfile = stbu_simple.imgfile,
@@ -105,7 +107,7 @@ class DBInput():
                 geom = geom_string,
             )
             self.session.add(row)
-        else:
+        else: # update the old one
             self.session.query(DBSTBUSimpleTable).filter(DBSTBUSimpleTable==check_row.id).update(
                 {
                     'result':stbu_simple.result, 
@@ -180,42 +182,6 @@ if __name__=="__main__":
 
     #crss = db.get_crosssections("A145", 0, 100)
     #print(crss)
-        
-
-
-
-
-
-
-
-
-
-# class InputDatabase:
-#     def __init__(self):
-#         #current_paths = [p for p in os.environ['PATH'].split(';') if len(p.strip()) > 0]
-#         # if not SPATIALITE_DLL in current_paths:
-#         #     new_paths = ';'.join(current_paths + [SPATIALITE_DLL])
-#         #     os.environ['PATH'] = new_paths
-        
-        
-#         #s#elf.connection.load_extension(SPATIALITE_MOD)     
-#         pass    
-
-
-#     def add_crosssection(self, crosssection, jsonfile, imgfile):
-#         self.connection = sqlite3.connect(SETTINGS["input_database"])
-#         self.connection.enable_load_extension(True)
-#         self.connection.execute('SELECT load_extension("mod_spatialite")')  
-        
-#         cur = self.connection.cursor()
-
-#         today = datetime.date.today().strftime("%Y-%m-%d")
-#         
-#         sql = f"INSERT INTO {INPUT_DATABASE_TABLES['crosssections']} (leveecode, chainage, jsonfile, imgfile, date, geometry) VALUES ('{crosssection.levee_code}', {crosssection.levee_chainage}, '{jsonfile}', '{imgfile}', '{today}', ST_GeomFromText({geometry}, 28992))"
-#         print(sql)
-#         cur.execute(sql)
-#         cur.commit()
-#         cur.close()
 
 
     

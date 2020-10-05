@@ -160,6 +160,10 @@ class STBUSimpleAssessment(BaseModel):
 
 
 if __name__ == "__main__":
+
+    # TODO > move input to project structured folder
+    # and create a project for a base of ALL assessments
+
     CPT_CREST_FILES = [
         "C:/Users/brein/Programming/Python/mlas_waternet/data/input/grondonderzoek/sonderingen/VAK_K07/K07-67.GEF",
         "C:/Users/brein/Programming/Python/mlas_waternet/data/input/grondonderzoek/sonderingen/VAK_K07/K07-69.GEF",
