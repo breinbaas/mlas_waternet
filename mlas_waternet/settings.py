@@ -14,7 +14,8 @@ INPUT_DATABASE_TABLES = {
 OUTPUT_PATHS = {
     "crosssections":"./data/output/crosssections/json",  
     "crosssection_plots":"./data/output/crosssections/plots",
-    "crosssection_shapes":"./data/output/crosssections/gis"
+    "crosssection_shapes":"./data/output/crosssections/gis",
+    "stbu_simple_assessment":"./data/output/stbu/simple"
 }
 
 LOG_FILES = {

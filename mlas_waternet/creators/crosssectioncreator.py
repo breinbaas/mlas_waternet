@@ -1,6 +1,7 @@
 # temp hack as long as mlas and geolib are not distributed as packages
 import sys
 sys.path.append("/home/breinbaas/Programming/packages/mlas")
+from tqdm import tqdm
 
 from pydantic import BaseModel
 from typing import List
@@ -31,7 +32,7 @@ class CrosssectionCreator(BaseModel):
         result = []
         rt = self._routes.get_by_levee_code(self.levee_code)
 
-        for chainage in range(rt.min_chainage, rt.max_chainage, self.center_to_center_distance_chainage):
+        for chainage in tqdm(range(rt.min_chainage, rt.max_chainage, self.center_to_center_distance_chainage)):
             x, y, alpha = rt.xya_at_chainage(chainage)
 
             alpha_l = alpha - math.radians(90)
@@ -85,8 +86,12 @@ class CrosssectionCreator(BaseModel):
                 levee_code = self.levee_code,
                 levee_chainage = chainage,
                 points=points_no_nan, 
-                reference_point=Point3D(x=x, y=y, l=self.left_from_refpoint, point_type=PointType.REFERENCEPOINT),
+                reference_point=Point3D(
+                    x=x, y=y, 
+                    l=round(math.sqrt(math.pow(x-points_no_nan[0].x,2) + math.pow(y-points_no_nan[0].y, 2)), 2), 
+                    point_type=PointType.REFERENCEPOINT),                    
             )
+            crosssection.reference_point.z = crosssection.get_z_at(crosssection.reference_point.l)
 
             if self.rdp_epsilon > 0:
                 crosssection.rdp(self.rdp_epsilon)

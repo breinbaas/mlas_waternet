@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.ext.declarative import declarative_base  
-from sqlalchemy import Column, String, Integer, Date, Float
+from sqlalchemy.sql import func
+from sqlalchemy import Column, String, Integer, Date, Float, Boolean
 from sqlalchemy.orm import sessionmaker
 import datetime
 from tqdm import tqdm    
@@ -8,7 +9,7 @@ from enum import IntEnum
 import os, glob
 from pathlib import Path
 from mlas_waternet.secrets import DB_INPUT_URL
-from geoalchemy2 import Geometry
+from geoalchemy2 import Geometry, WKTElement
 
 from mlas.objects.crosssection import Crosssection
 from mlas.helpers import case_insensitive_glob
@@ -37,6 +38,15 @@ class DBCPTTable(Base):
     date = Column(Date)
     geom = Column(Geometry('POINT'))
 
+class DBSTBUSimpleTable(Base):
+    __tablename__ = "stbusimple"
+    id = Column(Integer, primary_key=True)
+    result = Column(Boolean)
+    imgfile = Column(String)
+    jsonfile = Column(String)
+    date = Column(Date)
+    geom = Column(Geometry('POINT'))
+
 class DBInput():
     def __init__(self):
         self.engine = create_engine(DB_INPUT_URL)
@@ -44,6 +54,10 @@ class DBInput():
         Session.configure(bind=self.engine)
         self.session = Session()
 
+    def get_crosssections(self, levee_code, chainage_start=0, chainage_end=1e9):
+        return [Crosssection.parse(r.jsonfile) for r in self.session.query(DBCrosssectionsTable).all()\
+             if r.leveecode==levee_code and r.chainage >= chainage_start and r.chainage <= chainage_end]
+        
     def add_crosssection(self, crosssection, jsonfile, imgfile): 
         geom = f"LineString({crosssection.startpoint.x} {crosssection.startpoint.y}, {crosssection.endpoint.x} {crosssection.endpoint.y})"
         row = DBCrosssectionsTable(
@@ -61,9 +75,46 @@ class DBInput():
         
         if check_row is not None:
             self.session.query(DBCrosssectionsTable).filter(DBCrosssectionsTable==check_row.id). \
-                update({'jsonfile':jsonfile, 'imgfile':imgfile, 'date':datetime.date.today().strftime("%Y-%m-%d"), 'geom':geom}) 
+                update(
+                    {
+                        'jsonfile':jsonfile, 
+                        'imgfile':imgfile, 
+                        'date':datetime.date.today().strftime("%Y-%m-%d"), 
+                        'geom':geom
+                    }
+                ) 
         else:
             self.session.add(row)
+        self.session.commit()
+
+    
+    def add_stbusimple(self, stbu_simple):   
+        #check_row = self.session.query(DBSTBUSimpleTable). \
+        #    filter(DBCrosssectionsTable.geom.column.ST_AsText() == stbu_simple.point).first()
+        geom_string =  f"Point({stbu_simple.point.x} {stbu_simple.point.y})",
+        
+        check_row = self.session.query(DBSTBUSimpleTable).filter(func.ST_Contains(DBSTBUSimpleTable.geom, WKTElement(geom_string))).first()
+        date = datetime.datetime.today().strftime("%Y-%m-%d")
+
+        if not check_row:
+            row = DBSTBUSimpleTable(
+                result = stbu_simple.result,
+                imgfile = stbu_simple.imgfile,
+                jsonfile = stbu_simple.logfile,
+                date = date,
+                geom = geom_string,
+            )
+            self.session.add(row)
+        else:
+            self.session.query(DBSTBUSimpleTable).filter(DBSTBUSimpleTable==check_row.id).update(
+                {
+                    'result':stbu_simple.result, 
+                    'jsonfile':stbu_simple.logfile, 
+                    'imgfile':stbu_simple.imgfile, 
+                    'date':date
+                }
+            )
+
         self.session.commit()
 
     def check_cpts(self):
@@ -126,6 +177,9 @@ if __name__=="__main__":
 
     db = DBInput()
     db.check_cpts()
+
+    #crss = db.get_crosssections("A145", 0, 100)
+    #print(crss)
         
 
 
@@ -163,7 +217,6 @@ if __name__=="__main__":
 #         cur.commit()
 #         cur.close()
 
-if __name__=="__main__":
-    dbi = DBInput()
+
     
     

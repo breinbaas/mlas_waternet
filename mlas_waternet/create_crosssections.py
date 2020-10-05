@@ -2,6 +2,7 @@ import argparse
 import sys
 from pathlib import Path
 import shapefile
+from tqdm import tqdm
 
 from mlas.objects.points import Point2D
 
@@ -25,8 +26,8 @@ if __name__=="__main__":
 
     if len(sys.argv) == 1: # for debugging purposes
         args = {
-            "leveecode":"A145",
-            "centertocenter":10
+            "leveecode":"A146",
+            "centertocenter":100
         }
     else:
         argparser = argparse.ArgumentParser(description='Create crosssections for a given levee.')
@@ -41,7 +42,8 @@ if __name__=="__main__":
         height_data_provider = ahn3hdp
     )    
 
-    for crs in crc.execute():
+    print("Creating crosssections, this might take some time...")
+    for crs in tqdm(crc.execute()):
         # add ditches
         dtc = WaterBottomCreator(
             height_data_provider = ditchhdp,
