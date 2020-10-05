@@ -5,6 +5,7 @@ SETTINGS = {
     "filepath_waterbodem":"./data/input/rasterbestanden/waterbodem",
     "input_database":"./data/gisproject/databases/invoer.sqlite",
     "cpt_path":"./data/input/grondonderzoek/sonderingen",
+    "project_path":"./data/projects"
 }
 
 INPUT_DATABASE_TABLES = {
