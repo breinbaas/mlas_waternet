@@ -3,16 +3,20 @@ from typing import List
 from pathlib import Path
 import matplotlib.pyplot as plt
 import geopandas as gpd
+import geojson
 import contextily as ctx
 import pandas as pd
 from pyproj import Transformer
 import smopy
+from tqdm import tqdm
 
 from mlas.objects.cpt import CPT
 from mlas.objects.crosssection import Crosssection
 from mlas.objects.geometry import SoilProfile2D, SoilProfile2DLocation, SoilProfile3D
 from mlas.objects.points import Point3D
 from mlas.helpers import case_insensitive_glob
+from mlas.convertors.cptconvertor import CPTConvertor, CPTConvertorMethod
+from mlas.creators.soilprofile2dcreator import SoilProfile2DCreator, SoilProfile2DCreatorMethod
 
 from mlas_waternet.settings import SETTINGS
 
@@ -40,7 +44,8 @@ class Project(BaseModel):
     soilprofile2d_crest: SoilProfile2D = None
     soilprofile2d_polder: SoilProfile2D = None
     soilprofile3d: SoilProfile3D = None
-    referenceline: List[Point3D] = []
+    referenceline_crest: List[Point3D] = []
+    referenceline_polder: List[Point3D] = []
 
     # ASSESSMENTS
     def assess_stbu_simple(self):
@@ -88,6 +93,17 @@ class Project(BaseModel):
                 ax.plot(x, y, 'or', ms=2, mew=1)
                 ax.text(x, y, cpt['name'])
 
+            # REFERENCELINE CREST
+            xs, ys = [], []
+            for p in self.referenceline_crest:
+                x, y = p.x, p.y
+                lat, lon = transformer.transform(x, y)
+                px, py = map.to_pixels(lat, lon)
+                xs.append(px)
+                ys.append(py)
+            ax.plot(xs, ys, 'k--')         
+           
+            
             plt.tight_layout()
             plt.savefig(Path(self.base_folder).resolve() / self.levee_code / PROJECT_FOLDERS["overview"] / "location_crest_cpts.png")
             plt.close()
@@ -110,40 +126,86 @@ class Project(BaseModel):
                 ax.plot(x, y, 'or', ms=2, mew=1)
                 ax.text(x, y, cpt['name'])
 
+            # REFERENCELINE POLDER
+            xs, ys = [], []
+            for p in self.referenceline_polder:
+                x, y = p.x, p.y
+                lat, lon = transformer.transform(x, y)
+                px, py = map.to_pixels(lat, lon)
+                xs.append(px)
+                ys.append(py)
+            ax.plot(xs, ys, 'k--')
+
             plt.tight_layout()
             plt.savefig(Path(self.base_folder).resolve() / self.levee_code / PROJECT_FOLDERS["overview"] / "location_polder_cpts.png")
             plt.close()
 
-    def _init_crest_cpts(self):
+    def _init_cpts(self):
         cptfiles_crest = case_insensitive_glob(Path(self.base_folder).resolve() / self.levee_code / PROJECT_FOLDERS["cpts_crest"], ".gef")
-        for cptfile in cptfiles_crest:
+        print("reading crest CPTs...")
+        for cptfile in tqdm(cptfiles_crest):
             cpt = CPT()
             cpt.read(cptfile)
+            # cptconvertor = CPTConvertor(cpt=cpt, method=CPTConvertorMethod.THREE_TYPE_RULE, minimum_layer_height=0.2)
+            # cptconvertor.execute()
+            # cptconvertor.plot(filepath=str(Path(self.base_folder).resolve() / self.levee_code / PROJECT_FOLDERS["overview"]))
             self.cpts_crest.append(cpt)
 
-
-    def _init_polder_cpts(self):
         cptfiles_polder = case_insensitive_glob(Path(self.base_folder).resolve() / self.levee_code / PROJECT_FOLDERS["cpts_polder"], ".gef")
-        for cptfile in cptfiles_polder:
+        print("reading polder CPTs...")
+        for cptfile in tqdm(cptfiles_polder):
             cpt = CPT()
             cpt.read(cptfile)
+            # cptconvertor = CPTConvertor(cpt=cpt, method=CPTConvertorMethod.THREE_TYPE_RULE, minimum_layer_height=0.2)
+            # cptconvertor.execute()
+            # cptconvertor.plot(filepath=str(Path(self.base_folder).resolve() / self.levee_code / PROJECT_FOLDERS["overview"]))
             self.ctps_polder.append(cpt)
 
-    def _plot_crest_cpts(self):
+    def _init_soilprofile2ds(self):
+        sp2dcreator = SoilProfile2DCreator(
+            method = SoilProfile2DCreatorMethod.CPT_ONLY,
+            cptconvertor_method = CPTConvertorMethod.THREE_TYPE_RULE,
+            max_cpt_distance=100        
+        )
+
+        for cpt in self.cpts_crest:
+            sp2dcreator.add_cpt(cpt)
+            
+
+        # polyline = [
+        #     Point3D(x=124300,y=485060),
+        #     Point3D(x=124340,y=485110),
+        #     Point3D(x=124380,y=485170),
+        #     Point3D(x=124460,y=485200)
+        # ]
+
+        # sp2d = sp2dcreator.execute(polyline=polyline, fill=False)
+
+        # soilprofile1d = sp2d.get_soilprofile1d_at(Point3D(x=124339, y=485109))
+
+        # sp2d.plot(filepath="./testdata/output")
         pass
 
-    def _plot_polder_cpts(self):
-        pass
+    def _init_reflines(self):
+        crest_file = str(Path(self.base_folder).resolve() / self.levee_code / PROJECT_FOLDERS["refline"] / "crest.geojson")
+        polder_file = str(Path(self.base_folder).resolve() / self.levee_code / PROJECT_FOLDERS["refline"] / "polder.geojson")
+
+        with open(crest_file) as f:
+            crest_points = geojson.load(f)
+            for coord in crest_points["geometry"]["coordinates"][0]:
+                self.referenceline_crest.append(Point3D(x=coord[0], y=coord[1]))
+
+        with open(polder_file) as f:
+            polder_points = geojson.load(f)
+            for coord in polder_points["geometry"]["coordinates"]:
+                self.referenceline_polder.append(Point3D(x=coord[0], y=coord[1]))
 
     # INITIALIZATION
     def init(self) -> None:
         # read data
-        self._init_crest_cpts()
-        self._init_polder_cpts()
-
-        # generate plots
-        self._plot_crest_cpts()
-        self._plot_polder_cpts()
+        self._init_cpts()
+        self._init_soilprofile2ds()   
+        self._init_reflines()
 
 
     def new(self) -> None:
@@ -163,5 +225,3 @@ if __name__=="__main__":
     project.new()
     project.init()
     project.plot_overview()
-
-    # 

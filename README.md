@@ -35,3 +35,9 @@ z | float,2 | top level of the CPT
 date | date | date od the CPT
 geom | Point | geographical point of the CPT
 
+
+## TIPS QGis
+
+* Use the processing toolbox option **offset curve** to create a polder referenceline.
+* Use Export | Save Selected Features As and choose GeoJSON as filetype. Be sure to choose the right CRS (EPS:28992) and GeometryType = LineString
+
