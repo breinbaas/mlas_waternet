@@ -9,6 +9,7 @@ import pandas as pd
 from pyproj import Transformer
 import smopy
 from tqdm import tqdm
+import matplotlib.gridspec as gridspec
 
 from mlas.objects.cpt import CPT
 from mlas.objects.crosssection import Crosssection
@@ -74,8 +75,13 @@ class Project(BaseModel):
         pass
 
     def plot_overview(self):
-        transformer = Transformer.from_crs(28992, 4326) 
-        # CREST CPTS
+        transformer = Transformer.from_crs(28992, 4326)   
+
+        # CREST OVERVIEW
+        fig = plt.figure(constrained_layout=True, figsize=(30, 10))
+        gs = fig.add_gridspec(1, 2, width_ratios=[1, 3])
+        ax_map = fig.add_subplot(gs[0, 0])
+        ax_profile = fig.add_subplot(gs[0, 1])
         if len(self.cpts_crest) > 0:
             cpts_crest = [{'name':cpt.name, 'x': cpt.x, 'y': cpt.y} for cpt in self.cpts_crest] 
                    
@@ -87,13 +93,13 @@ class Project(BaseModel):
 
             map = smopy.Map((min(lats), min(lons), max(lats), max(lons)), z=14)
             
-            ax = map.show_mpl(figsize=(15, 15))
+            map.show_mpl(ax=ax_map)
             for cpt in cpts_crest:
                 x, y = map.to_pixels(cpt['lat'], cpt['lon'])
-                ax.plot(x, y, 'or', ms=2, mew=1)
-                ax.text(x, y, cpt['name'])
+                ax_map.plot(x, y, 'or', ms=2, mew=1)
+                ax_map.text(x, y, cpt['name'])
 
-            # REFERENCELINE CREST
+            # REFERENCELINE 
             xs, ys = [], []
             for p in self.referenceline_crest:
                 x, y = p.x, p.y
@@ -101,14 +107,18 @@ class Project(BaseModel):
                 px, py = map.to_pixels(lat, lon)
                 xs.append(px)
                 ys.append(py)
-            ax.plot(xs, ys, 'k--')         
+            ax_map.plot(xs, ys, 'k--')         
            
+            self.soilprofile2d_crest.plot(ax=ax_profile)
             
-            plt.tight_layout()
-            plt.savefig(Path(self.base_folder).resolve() / self.levee_code / PROJECT_FOLDERS["overview"] / "location_crest_cpts.png")
+            fig.savefig(Path(self.base_folder).resolve() / self.levee_code / PROJECT_FOLDERS["overview"] / "location_crest_cpts.png")
             plt.close()
 
-        # POLDER CPTS
+        # POLDER OVERVIEW
+        fig = plt.figure(constrained_layout=True, figsize=(30, 10))
+        gs = fig.add_gridspec(1, 2, width_ratios=[1, 3])
+        ax_map = fig.add_subplot(gs[0, 0])
+        ax_profile = fig.add_subplot(gs[0, 1])
         if len(self.ctps_polder) > 0:
             cpts_polder = [{'name':cpt.name, 'x': cpt.x, 'y': cpt.y} for cpt in self.ctps_polder]        
 
@@ -120,13 +130,13 @@ class Project(BaseModel):
 
             map = smopy.Map((min(lats), min(lons), max(lats), max(lons)), z=14)
             
-            ax = map.show_mpl(figsize=(15, 15))
+            map.show_mpl(ax=ax_map)
             for cpt in cpts_polder:
                 x, y = map.to_pixels(cpt['lat'], cpt['lon'])
-                ax.plot(x, y, 'or', ms=2, mew=1)
-                ax.text(x, y, cpt['name'])
+                ax_map.plot(x, y, 'or', ms=2, mew=1)
+                ax_map.text(x, y, cpt['name'])
 
-            # REFERENCELINE POLDER
+            # REFERENCELINE 
             xs, ys = [], []
             for p in self.referenceline_polder:
                 x, y = p.x, p.y
@@ -134,11 +144,10 @@ class Project(BaseModel):
                 px, py = map.to_pixels(lat, lon)
                 xs.append(px)
                 ys.append(py)
-            ax.plot(xs, ys, 'k--')
-
-            plt.tight_layout()
+            ax_map.plot(xs, ys, 'k--')
+            self.soilprofile2d_polder.plot(ax=ax_profile)
             plt.savefig(Path(self.base_folder).resolve() / self.levee_code / PROJECT_FOLDERS["overview"] / "location_polder_cpts.png")
-            plt.close()
+            plt.close()       
 
     def _init_cpts(self):
         cptfiles_crest = case_insensitive_glob(Path(self.base_folder).resolve() / self.levee_code / PROJECT_FOLDERS["cpts_crest"], ".gef")
@@ -169,23 +178,14 @@ class Project(BaseModel):
         )
 
         for cpt in self.cpts_crest:
-            sp2dcreator.add_cpt(cpt)
-            
+            sp2dcreator.add_cpt(cpt)  
+        self.soilprofile2d_crest = sp2dcreator.execute(polyline=self.referenceline_crest, fill=True)
 
-        # polyline = [
-        #     Point3D(x=124300,y=485060),
-        #     Point3D(x=124340,y=485110),
-        #     Point3D(x=124380,y=485170),
-        #     Point3D(x=124460,y=485200)
-        # ]
-
-        # sp2d = sp2dcreator.execute(polyline=polyline, fill=False)
-
-        # soilprofile1d = sp2d.get_soilprofile1d_at(Point3D(x=124339, y=485109))
-
-        # sp2d.plot(filepath="./testdata/output")
-        pass
-
+        sp2dcreator.clear()
+        for cpt in self.ctps_polder:
+            sp2dcreator.add_cpt(cpt)  
+        self.soilprofile2d_polder = sp2dcreator.execute(polyline=self.referenceline_polder, fill=True)
+    
     def _init_reflines(self):
         crest_file = str(Path(self.base_folder).resolve() / self.levee_code / PROJECT_FOLDERS["refline"] / "crest.geojson")
         polder_file = str(Path(self.base_folder).resolve() / self.levee_code / PROJECT_FOLDERS["refline"] / "polder.geojson")
@@ -204,8 +204,9 @@ class Project(BaseModel):
     def init(self) -> None:
         # read data
         self._init_cpts()
-        self._init_soilprofile2ds()   
         self._init_reflines()
+        self._init_soilprofile2ds()   
+        
 
 
     def new(self) -> None:
