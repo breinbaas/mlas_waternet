@@ -34,8 +34,6 @@ PROJECT_FOLDERS = {
     "stbu_simple":"output/sbtu_simple"    
 }
 
-
-
 class Project(BaseModel):    
     base_folder: str  
     levee_code: str  
@@ -207,8 +205,6 @@ class Project(BaseModel):
         self._init_reflines()
         self._init_soilprofile2ds()   
         
-
-
     def new(self) -> None:
         """if the given folder contains data this will create a necessary input"""
         pathname = Path(self.base_folder).resolve() / self.levee_code
