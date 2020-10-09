@@ -30,6 +30,7 @@ PROJECT_FOLDERS = {
     "boreholes_polder":"input/soilinvestigations/boreholes/polder",
     "geoprofile_crest":"input/soilinvestigations/geoprofile/crest",
     "geoprofile_polder":"input/soilinvestigations/geoprofile/polder",
+    "cptplots":"output/overview",
     "overview":"output/overview",
     "stbu_simple":"output/sbtu_simple"    
 }
@@ -54,11 +55,30 @@ class Project(BaseModel):
     # DATA CONVERSIONS / CREATION
     def create_geoprofile_crest(self):
         """generate a geoprofile for the crest"""
-        pass
+        sp2dcreator = SoilProfile2DCreator(
+            method = SoilProfile2DCreatorMethod.CPT_ONLY,
+            cptconvertor_method = CPTConvertorMethod.SBT,
+            max_cpt_distance=100        
+        )
+
+        if len(self.cpts_crest) > 0:
+            for cpt in self.cpts_crest:
+                sp2dcreator.add_cpt(cpt)  
+            self.soilprofile2d_crest = sp2dcreator.execute(polyline=self.referenceline_crest, fill=True)
+            
 
     def create_geoprofile_polder(self):
         """generate a geoprofile for the polder"""
-        pass
+        sp2dcreator = SoilProfile2DCreator(
+            method = SoilProfile2DCreatorMethod.CPT_ONLY,
+            cptconvertor_method = CPTConvertorMethod.THREE_TYPE_RULE,
+            max_cpt_distance=100        
+        )
+
+        if len(self.ctps_polder) > 0:
+            for cpt in self.ctps_polder:
+                sp2dcreator.add_cpt(cpt)  
+            self.soilprofile2d_polder = sp2dcreator.execute(polyline=self.referenceline_polder, fill=True)
 
     def create_geoprofile_3d(self):
         """generate a 3d profile"""
@@ -72,15 +92,20 @@ class Project(BaseModel):
         """create an empty project folder for a new project"""
         pass
 
+    def plot_ctps(self):
+        print("plotting CPTs...")
+        for crs in tqdm(self.cpts_crest + self.ctps_polder):
+            crs.plot(filepath=str(Path(self.base_folder).resolve() / self.levee_code / PROJECT_FOLDERS["cptplots"]))
+    
     def plot_overview(self):
         transformer = Transformer.from_crs(28992, 4326)   
 
-        # CREST OVERVIEW
-        fig = plt.figure(constrained_layout=True, figsize=(30, 10))
-        gs = fig.add_gridspec(1, 2, width_ratios=[1, 3])
-        ax_map = fig.add_subplot(gs[0, 0])
-        ax_profile = fig.add_subplot(gs[0, 1])
+        # CREST OVERVIEW        
         if len(self.cpts_crest) > 0:
+            fig = plt.figure(constrained_layout=True, figsize=(30, 10))
+            gs = fig.add_gridspec(1, 2, width_ratios=[1, 3])
+            ax_map = fig.add_subplot(gs[0, 0])
+            ax_profile = fig.add_subplot(gs[0, 1])
             cpts_crest = [{'name':cpt.name, 'x': cpt.x, 'y': cpt.y} for cpt in self.cpts_crest] 
                    
             for cpt in cpts_crest:
@@ -113,11 +138,12 @@ class Project(BaseModel):
             plt.close()
 
         # POLDER OVERVIEW
-        fig = plt.figure(constrained_layout=True, figsize=(30, 10))
-        gs = fig.add_gridspec(1, 2, width_ratios=[1, 3])
-        ax_map = fig.add_subplot(gs[0, 0])
-        ax_profile = fig.add_subplot(gs[0, 1])
         if len(self.ctps_polder) > 0:
+            fig = plt.figure(constrained_layout=True, figsize=(30, 10))
+            gs = fig.add_gridspec(1, 2, width_ratios=[1, 3])
+            ax_map = fig.add_subplot(gs[0, 0])
+            ax_profile = fig.add_subplot(gs[0, 1])
+        
             cpts_polder = [{'name':cpt.name, 'x': cpt.x, 'y': cpt.y} for cpt in self.ctps_polder]        
 
             for cpt in cpts_polder:
@@ -169,34 +195,25 @@ class Project(BaseModel):
             self.ctps_polder.append(cpt)
 
     def _init_soilprofile2ds(self):
-        sp2dcreator = SoilProfile2DCreator(
-            method = SoilProfile2DCreatorMethod.CPT_ONLY,
-            cptconvertor_method = CPTConvertorMethod.THREE_TYPE_RULE,
-            max_cpt_distance=100        
-        )
-
-        for cpt in self.cpts_crest:
-            sp2dcreator.add_cpt(cpt)  
-        self.soilprofile2d_crest = sp2dcreator.execute(polyline=self.referenceline_crest, fill=True)
-
-        sp2dcreator.clear()
-        for cpt in self.ctps_polder:
-            sp2dcreator.add_cpt(cpt)  
-        self.soilprofile2d_polder = sp2dcreator.execute(polyline=self.referenceline_polder, fill=True)
+        self.create_geoprofile_crest()
+        self.create_geoprofile_polder()
+        
     
     def _init_reflines(self):
-        crest_file = str(Path(self.base_folder).resolve() / self.levee_code / PROJECT_FOLDERS["refline"] / "crest.geojson")
-        polder_file = str(Path(self.base_folder).resolve() / self.levee_code / PROJECT_FOLDERS["refline"] / "polder.geojson")
+        crest_file = Path(self.base_folder).resolve() / self.levee_code / PROJECT_FOLDERS["refline"] / "crest.geojson"
+        polder_file = Path(self.base_folder).resolve() / self.levee_code / PROJECT_FOLDERS["refline"] / "polder.geojson"
 
-        with open(crest_file) as f:
-            crest_points = geojson.load(f)
-            for coord in crest_points["geometry"]["coordinates"][0]:
-                self.referenceline_crest.append(Point3D(x=coord[0], y=coord[1]))
+        if crest_file.is_file:
+            with open(str(crest_file)) as f:
+                crest_points = geojson.load(f)
+                for coord in crest_points["geometry"]["coordinates"][0]:
+                    self.referenceline_crest.append(Point3D(x=coord[0], y=coord[1]))
 
-        with open(polder_file) as f:
-            polder_points = geojson.load(f)
-            for coord in polder_points["geometry"]["coordinates"]:
-                self.referenceline_polder.append(Point3D(x=coord[0], y=coord[1]))
+        if polder_file.is_file():
+            with open(str(polder_file)) as f:
+                polder_points = geojson.load(f)
+                for coord in polder_points["geometry"]["coordinates"]:
+                    self.referenceline_polder.append(Point3D(x=coord[0], y=coord[1]))
 
     # INITIALIZATION
     def init(self) -> None:
@@ -218,7 +235,8 @@ class Project(BaseModel):
 
 if __name__=="__main__":
     # create a new project
-    project = Project(base_folder=SETTINGS["project_path"], levee_code="A146")
+    project = Project(base_folder=SETTINGS["project_path"], levee_code="P1017")
     project.new()
     project.init()
+    project.plot_ctps()
     project.plot_overview()
