@@ -143,10 +143,12 @@ class Routes:
                     dx = rt.chainage_points[-1].point3d.x - pt[0]
                     dy = rt.chainage_points[-1].point3d.y - pt[1]
                     m += math.sqrt(dx ** 2 + dy ** 2)
-                    rt.chainage_points.append(
-                        ChainagePoint(chainage=int(m), point3d=Point3D(x=pt[0], y=pt[1]))
-                    )
-
+                    # avoid entries with same chainage
+                    if not int(m) in [p.chainage for p in rt.chainage_points]:
+                        rt.chainage_points.append(
+                            ChainagePoint(chainage=int(m), point3d=Point3D(x=pt[0], y=pt[1]))
+                        )
+                
             self.routes[rt.name] = rt
 
     def get_levee_codes(self):

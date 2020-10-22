@@ -26,8 +26,8 @@ if __name__=="__main__":
 
     if len(sys.argv) == 1: # for debugging purposes
         args = {
-            "leveecode":"A146",
-            "centertocenter":100
+            "leveecode":"A540",
+            "centertocenter":10
         }
     else:
         argparser = argparse.ArgumentParser(description='Create crosssections for a given levee.')

@@ -3,6 +3,7 @@ SETTINGS = {
     "filepath_ahn3_geotiff":"./data/input/rasterbestanden/ahn3",
     "filepath_ditches":"./data/input/rasterbestanden/sloten",
     "filepath_waterbodem":"./data/input/rasterbestanden/waterbodem",
+    "filepath_hydraulic_head":"./data/input/rasterbestanden/stijghoogte",
     "input_database":"./data/gisproject/databases/invoer.sqlite",
     "cpt_path":"./data/input/grondonderzoek/sonderingen",
     "project_path":"./data/projects"

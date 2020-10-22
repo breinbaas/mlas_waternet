@@ -193,7 +193,8 @@ class Tileset:
 
 
 if __name__ == "__main__":
-    ts = Tileset(tile_type=TileType.AHN3)
+    ts = Tileset(tile_type=TileType.HYDRAULIC_HEAD)
+    #ts.
 
     for x in range(122000, 122100):
         print(ts.get_point3d(x, 478628))
