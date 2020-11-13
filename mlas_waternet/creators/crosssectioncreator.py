@@ -56,9 +56,15 @@ class CrosssectionCreator(BaseModel):
                     ),
                     2,
                 )
-                if points[i].l == 0:
-                    points[i].point_type = PointType.REFERENCEPOINT
 
+            # find and set reference point
+            refpoint = Point3D(x=x, y=y, z=round(self.height_data_provider.get_z(x, y),2), l=self.left_from_refpoint, point_type=PointType.REFERENCEPOINT)
+            
+            # remove points too close to the refpoint
+            points = [p for p in points if abs(p.l - refpoint.l) > 0.1]
+            points.append(refpoint)
+            points = sorted(points, key=lambda x:x.l)
+            
             # remove all nan's except for the start- and endpoint and the reference point
             points_no_nan = []
             for i in range(len(points)):
@@ -75,7 +81,7 @@ class CrosssectionCreator(BaseModel):
 
             # if the reference point has a nan value, add the interpolated value of the two consequetive points
             for i, p in enumerate(points_no_nan):
-                if p.point_type == PointType.REFERENCEPOINT and p.z == np.nan:
+                if p.point_type == PointType.REFERENCEPOINT and np.isnan(p.z):
                     if i>0 and i<len(points_no_nan)-1:
                         p1 = points_no_nan[i-1]
                         p2 = points_no_nan[i+1]
@@ -86,13 +92,9 @@ class CrosssectionCreator(BaseModel):
                 levee_code = self.levee_code,
                 levee_chainage = chainage,
                 points=points_no_nan, 
-                reference_point=Point3D(
-                    x=x, y=y, 
-                    l=round(math.sqrt(math.pow(x-points_no_nan[0].x,2) + math.pow(y-points_no_nan[0].y, 2)), 2), 
-                    point_type=PointType.REFERENCEPOINT),                    
+                reference_point=refpoint,                    
             )
-            crosssection.reference_point.z = crosssection.get_z_at(crosssection.reference_point.l)
-
+            
             if self.rdp_epsilon > 0:
                 crosssection.rdp(self.rdp_epsilon)
 

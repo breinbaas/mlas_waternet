@@ -26,7 +26,7 @@ if __name__=="__main__":
 
     if len(sys.argv) == 1: # for debugging purposes
         args = {
-            "leveecode":"A540",
+            "leveecode":"P019",
             "centertocenter":10
         }
     else:
@@ -44,29 +44,29 @@ if __name__=="__main__":
 
     print("Creating crosssections, this might take some time...")
     for crs in tqdm(crc.execute()):
-        # add ditches
-        dtc = WaterBottomCreator(
-            height_data_provider = ditchhdp,
-            start_point = crs.startpoint,
-            end_point = crs.endpoint       
-        )
-        ditches = dtc.execute()
+        # # add ditches
+        # dtc = WaterBottomCreator(
+        #     height_data_provider = ditchhdp,
+        #     start_point = crs.startpoint,
+        #     end_point = crs.endpoint       
+        # )
+        # ditches = dtc.execute()
 
-        for ditch in ditches:
-            crs.add_ditch([Point2D(x=p.l, z=p.z) for p in ditch])        
+        # for ditch in ditches:
+        #     crs.add_ditch([Point2D(x=p.l, z=p.z) for p in ditch])        
 
-        # add waterbottom of levee
-        wbc = WaterBottomCreator(
-            height_data_provider = waterbottomhdp,
-            start_point = crs.startpoint,
-            end_point = crs.endpoint       
-        )
-        waterbottoms = wbc.execute()
+        # # add waterbottom of levee
+        # wbc = WaterBottomCreator(
+        #     height_data_provider = waterbottomhdp,
+        #     start_point = crs.startpoint,
+        #     end_point = crs.endpoint       
+        # )
+        # waterbottoms = wbc.execute()
 
-        for waterbottom in waterbottoms:
-            crs.add_waterbottom([Point2D(x=p.l, z=p.z) for p in waterbottom])
+        # for waterbottom in waterbottoms:
+        #     crs.add_waterbottom([Point2D(x=p.l, z=p.z) for p in waterbottom])
 
-        crs_pfilename = crs.serialize(filepath=OUTPUT_PATHS["crosssections"])
+        crs_pfilename = crs.serialize(filepath=OUTPUT_PATHS["crosssections_json"])
         crs_pimgname = crs.plot(filepath=OUTPUT_PATHS["crosssection_plots"])
 
         crs_filename = str(crs_pfilename.resolve())
